@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000"
+    android:background="#fff"
     tools:context="com.guaju.vitamiodemo.PlayerActivity">
 
         <io.vov.vitamio.widget.VideoView
@@ -13,6 +13,24 @@
             android:layout_centerInParent="true"
             android:layout_width="match_parent"
             android:layout_height="200dp" />
+        <RelativeLayout
+            android:id="@+id/rl"
+            android:layout_alignBottom="@+id/videoview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#666"
+            android:visibility="gone"
+            >
+                <ImageView
+                    android:layout_alignParentRight="true"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:onClick="max"
+                    android:background="@drawable/zoom"
+                    />
+
+        </RelativeLayout>
+
 
 </RelativeLayout>
 

@@ -39,7 +39,7 @@ public class NetVideoActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 String url = urls[position];
                 Intent intent = new Intent(NetVideoActivity.this, PlayerActivity.class);
-                intent.putExtra("netPath",url);
+                intent.putExtra("netpath",url);
                 startActivity(intent);
             }
         });

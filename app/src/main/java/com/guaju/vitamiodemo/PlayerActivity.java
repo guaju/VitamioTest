@@ -3,8 +3,14 @@ package com.guaju.vitamiodemo;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import io.vov.vitamio.LibsChecker;
 import io.vov.vitamio.MediaPlayer;
@@ -16,6 +22,8 @@ public class PlayerActivity extends AppCompatActivity {
 
     private VideoView mVideoView;
     private String path;
+    private RelativeLayout rl;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,10 +33,29 @@ public class PlayerActivity extends AppCompatActivity {
             return;
 
 
-        setContentView(R.layout.activity_player);
-        initIntent();
-        findid();
 
+        setContentView(R.layout.activity_player);
+
+
+//        findid();
+//        initVideoViewTouchLisener();
+//        initIntent();
+
+    }
+
+    private void initVideoViewTouchLisener() {
+        mVideoView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction()==MotionEvent.ACTION_DOWN){
+                    //按下的时候，让rl显示出来
+                    rl.setVisibility(View.VISIBLE);
+
+                }
+
+                return false;
+            }
+        });
     }
 
     private void initIntent() {
@@ -51,9 +78,9 @@ public class PlayerActivity extends AppCompatActivity {
     private void startPlay(String url,PlayType type) {
         //判断传过来的是什么类型地址，如果是网络类型，调用  setVideoURI 如果是本地视频调用 setVideoPath
         if (type==PlayType.TYPE_LOCAL){
-            mVideoView.setVideoPath(path);
+            mVideoView.setVideoPath(url);
         }else{
-            mVideoView.setVideoURI(Uri.parse("url"));
+            mVideoView.setVideoURI(Uri.parse(url));
         }
         //设置mediacontroller
         mVideoView.setMediaController(new MediaController(this));
@@ -73,10 +100,15 @@ public class PlayerActivity extends AppCompatActivity {
 
     private void findid() {
         mVideoView = findViewById(R.id.videoview);
+        rl = findViewById(R.id.rl);
     }
-        //播放类型 枚举
+
+    public void max(View view) {
+
+    }
+
+    //播放类型 枚举
     public  enum PlayType{
         TYPE_LOCAL,TYPE_NET;
-
     }
 }
