@@ -41,5 +41,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void playNetVideo(View view) {
         //播放网络视频
+          startActivity(new Intent(this,NetVideoActivity.class));
+
     }
 }

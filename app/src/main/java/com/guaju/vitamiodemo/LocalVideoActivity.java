@@ -35,7 +35,7 @@ public class LocalVideoActivity extends AppCompatActivity {
                 File file = files[position];
                 String absolutePath = file.getAbsolutePath();
                 Intent intent = new Intent(LocalVideoActivity.this, PlayerActivity.class);
-                intent.putExtra("path",absolutePath);
+                intent.putExtra("localpath",absolutePath);
                 startActivity(intent);
 
             }
@@ -49,7 +49,7 @@ public class LocalVideoActivity extends AppCompatActivity {
             Toast.makeText(this, "存在文件", Toast.LENGTH_SHORT).show();
             files = videoDir.listFiles();
             String[] namelist = videoDir.list();
-            ArrayAdapter<String> localAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, namelist);
+            ArrayAdapter<String> localAdapter = new ArrayAdapter<>(this, R.layout.text_center_layout, namelist);
             listView.setAdapter(localAdapter);
         }
 
