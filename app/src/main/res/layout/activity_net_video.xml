@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context="com.guaju.vitamiodemo.NetVideoActivity">
-
+    <include layout="@layout/titlebar"/>
     <ListView
         android:id="@+id/net_listview"
         android:layout_width="match_parent"
