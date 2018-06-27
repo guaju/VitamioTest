@@ -6,6 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context="com.guaju.vitamiodemo.MainActivity">
+    <!--自定义的titlebar-->
       <include layout="@layout/titlebar"/>
     <Button
         android:layout_width="match_parent"

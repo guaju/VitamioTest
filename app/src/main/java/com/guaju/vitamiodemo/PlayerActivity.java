@@ -8,17 +8,21 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+
+import com.guaju.vitamiodemo.utils.ScreenUtil;
 
 import io.vov.vitamio.LibsChecker;
 import io.vov.vitamio.MediaPlayer;
 import io.vov.vitamio.widget.VideoView;
 
 public class PlayerActivity extends AppCompatActivity {
-
+    private static final String TAG = "PlayerActivity";
 
     private VideoView mVideoView;
     private String path;
@@ -36,13 +40,8 @@ public class PlayerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_player);
         findid();
 
-        resetVitamio();
         initVideoViewTouchLisener();
-        initIntent();
-
-    }
-
-    private void resetVitamio() {
+        startPlay();
 
     }
 
@@ -73,7 +72,7 @@ public class PlayerActivity extends AppCompatActivity {
         });
     }
 
-    private void initIntent() {
+    private void startPlay() {
         Intent intent = getIntent();
         //如果没有发intent 那么直接返回
         if (intent == null) {
@@ -97,7 +96,7 @@ public class PlayerActivity extends AppCompatActivity {
         } else {
             mVideoView.setVideoURI(Uri.parse(url));
         }
-        //设置mediacontroller
+////        设置mediacontroller
 //        mVideoView.setMediaController(new MediaController(this));
         //开始请求数据（视频数据）
         mVideoView.requestFocus();
@@ -115,18 +114,41 @@ public class PlayerActivity extends AppCompatActivity {
 
     private void findid() {
         mVideoView = findViewById(R.id.videoview);
+        //rl是点击videoview出来的那一条
         rl = (RelativeLayout) findViewById(R.id.rl);
+        //自定义的标题条
         titlebar = (LinearLayout) findViewById(R.id.titlebar);
 
     }
-
+    //切换全屏和竖屏的方法
     public void max(View view) {
+        //判断当前手机的方向是什么方向
+        //如果是水平的
         if (this.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            //设置手机方向为竖直方向
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            //把titlebar显示出来
             titlebar.setVisibility(View.VISIBLE);
+            //切换成垂直方向时，需要重新设置他的宽高
+            RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) mVideoView.getLayoutParams();
+            layoutParams.addRule(RelativeLayout.CENTER_IN_PARENT);
+            layoutParams.width= ScreenUtil.getScreenWidth(this);
+            layoutParams.height=getResources().getDimensionPixelSize(R.dimen.videoview_height);
+
+            Log.e(TAG, "屏幕宽度是"+layoutParams.width+"屏幕高度"+layoutParams.height );
+            mVideoView.setLayoutParams(layoutParams);
+
+
         } else {
+            //如果当前手机是垂直方向的话，就置为水平
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            //同样把titlebar去掉
             titlebar.setVisibility(View.GONE);
+            //切换成水平方向时，需要重新设置他的宽高
+
+            RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+
+            mVideoView.setLayoutParams(lp);
         }
 
     }
