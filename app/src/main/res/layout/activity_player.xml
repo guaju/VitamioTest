@@ -11,20 +11,41 @@
     <include
         layout="@layout/titlebar"
         ></include>
+    <FrameLayout
+        android:id="@+id/fl"
+        android:layout_centerInParent="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
         <io.vov.vitamio.widget.VideoView
             android:id="@+id/videoview"
-            android:layout_centerInParent="true"
             android:layout_width="match_parent"
             android:layout_height="@dimen/videoview_height" />
+        <ImageView
+            android:visibility="gone"
+            android:layout_gravity="center"
+            android:id="@+id/iv2_play"
+            android:onClick="playorpause"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:background="@drawable/pause"
+            />
+    </FrameLayout>
         <RelativeLayout
             android:id="@+id/rl"
-            android:layout_alignBottom="@+id/videoview"
+            android:layout_alignBottom="@+id/fl"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="#a666"
             android:visibility="gone"
             android:padding="5dp"
             >
+            <ImageView
+                android:id="@+id/iv_play"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:background="@drawable/pause"
+                android:onClick="playorpause"
+                />
                 <ImageView
                     android:id="@+id/iv_zoom_control"
                     android:layout_alignParentRight="true"
