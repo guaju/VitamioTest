@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
@@ -19,6 +20,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 
+import com.guaju.vitamiodemo.utils.AjustSystemLightUtil;
 import com.guaju.vitamiodemo.utils.ScreenUtil;
 
 import java.io.IOException;
@@ -42,7 +44,7 @@ public class PlayerActivity extends AppCompatActivity {
     private LinearLayout ll;
 
     private LinearLayout titlebar;
-    private ImageView iv_play,iv2_play;
+    private ImageView iv_play, iv2_play;
     private SeekBar seekBar;
     private long videoLength;//视频长度
     private float videoScale;//视频长度和seekbar进度的比例
@@ -50,22 +52,29 @@ public class PlayerActivity extends AppCompatActivity {
     private MediaPlayer mediaPlayer;
     private MediaController mediaController;
 
-    private Handler mHandler = new Handler(){
+    private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            if (msg.what==SEEKBAR_WHAT){
+            if (msg.what == SEEKBAR_WHAT) {
                 //在这给mHandler自己发消息，然后循环处理
                 long currentPosition = mVideoView.getCurrentPosition();//获取当前播放位置
                 float v = currentPosition / videoScale; //获取当前seekbar真实的位置
-                seekBar.setProgress((int)v);
-                Log.e("guaju",(int)v+"");
-                mHandler.sendEmptyMessageDelayed(SEEKBAR_WHAT,2000);
-            }else if (msg.what==BOTTOM_GONE_WHAT){
+                seekBar.setProgress((int) v);
+                Log.e("guaju", (int) v + "");
+                mHandler.sendEmptyMessageDelayed(SEEKBAR_WHAT, 2000);
+            } else if (msg.what == BOTTOM_GONE_WHAT) {
                 ll.setVisibility(View.GONE);
                 iv2_play.setVisibility(View.GONE);
             }
         }
     };
+    private float preY;
+    private float lastY;
+    private int defaultScreenMode;
+    private int defaultscreenBrightness;
+    private float lightScale;//亮度比例值
+    private float newLight;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,10 +94,32 @@ public class PlayerActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
+        //存储系统初始亮度
+        try {
+            getSystemLightValue();
+        } catch (Settings.SettingNotFoundException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    private void getSystemLightValue() throws Settings.SettingNotFoundException {
+                 /* 获得当前屏幕亮度的模式
+                * SCREEN_BRIGHTNESS_MODE_AUTOMATIC=1 为自动调节屏幕亮度
+                * SCREEN_BRIGHTNESS_MODE_MANUAL=0 为手动调节屏幕亮度
+                */
+        defaultScreenMode= AjustSystemLightUtil.getSystemLightMode(this);
+        // 获得当前屏幕亮度值 0--255
+        defaultscreenBrightness = AjustSystemLightUtil.getSystemLightValue(this);
+        newLight = defaultscreenBrightness;//为了下文中设置亮度用的变量
+        //计算手指滑动改变亮度的比例值
+        lightScale = 255.0f / getResources().getDimensionPixelSize(R.dimen.videoview_height);
+
     }
 
     private void initEvent() {
-       //设置自定义进度条的监听
+        //设置自定义进度条的监听
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -106,7 +137,7 @@ public class PlayerActivity extends AppCompatActivity {
                 int progress = seekBar.getProgress();
 
                 //当进度发生变化时的监听
-                Log.e("GUAJU",progress+"");
+                Log.e("GUAJU", progress + "");
 
                 //通过seekbar拿到当前的进度
                 float v = progress * videoScale;//当前的播放进度
@@ -128,10 +159,9 @@ public class PlayerActivity extends AppCompatActivity {
 
     private void updateSeekBarProgess() {
 //        if (mVideoView.isPlaying()){
-            //当视频播放时才做seekbar的更新
+        //当视频播放时才做seekbar的更新
 
-            mHandler.sendEmptyMessage(SEEKBAR_WHAT);
-
+        mHandler.sendEmptyMessage(SEEKBAR_WHAT);
 
 
 //        }
@@ -162,6 +192,14 @@ public class PlayerActivity extends AppCompatActivity {
                     }
 
                 }
+//                else if (event.getAction() == MotionEvent.ACTION_MOVE){
+//                         lastY = event.getY();
+//                         if (lastY-preY>0){
+//                             Log.e("guaju", "在往上滑" );
+//                         }else{
+//                             Log.e("guaju","在往下滑");
+//                         }
+//                }
 
                 return false;
             }
@@ -200,10 +238,6 @@ public class PlayerActivity extends AppCompatActivity {
         mVideoView.requestFocus();
 
 
-
-
-
-
         //添加准备播放的监听
 
         mVideoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
@@ -214,7 +248,7 @@ public class PlayerActivity extends AppCompatActivity {
                 //拿到视频的总长度
                 videoLength = mVideoView.getDuration();
                 //得到进度条和视频长度的比例
-                videoScale = videoLength/100;   //因为seekbar的总长度为100
+                videoScale = videoLength / 100;   //因为seekbar的总长度为100
                 updateSeekBarProgess();
             }
         });
@@ -222,7 +256,7 @@ public class PlayerActivity extends AppCompatActivity {
     }
 
     private void findid() {
-         mVideoView = findViewById(R.id.videoview);
+        mVideoView = findViewById(R.id.videoview);
         //rl是点击videoview出来的那一条
         ll = (LinearLayout) findViewById(R.id.ll);
         //自定义的标题条
@@ -230,7 +264,7 @@ public class PlayerActivity extends AppCompatActivity {
         iv_play = (ImageView) findViewById(R.id.iv_play);
         iv2_play = (ImageView) findViewById(R.id.iv2_play);
         //找到seekbar
-        seekBar = (SeekBar)findViewById(R.id.seekbar);
+        seekBar = (SeekBar) findViewById(R.id.seekbar);
 
     }
 
@@ -297,5 +331,50 @@ public class PlayerActivity extends AppCompatActivity {
     //播放类型 枚举 可以让参数唯一
     public enum PlayType {
         TYPE_LOCAL, TYPE_NET;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        float x = event.getX();
+        //拿到屏幕的宽度
+        int screenWidth = ScreenUtil.getScreenWidth(PlayerActivity.this);
+
+
+
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            preY = event.getY();  //按下的时候拿到按下的手指坐标
+        }
+        if (event.getAction() == MotionEvent.ACTION_MOVE) {
+            lastY = event.getY();
+            if (x>screenWidth/2){
+                //说明是在屏幕的右边，属于亮度调节
+                //要增加（减少的亮度值）
+               float dY=(lastY-preY)*lightScale; //这个是要调整的亮度 是分正负
+               newLight =newLight-dY; //为什么是减去呢？因为dy如果是负数，说明我们是在增加亮度，减去一个负数就是
+                //加上这个数 所以说是减法
+                Log.e("guaju", "变化的亮度值"+dY+"新亮度为"+newLight);
+                //调节系统亮度的范围是0-255
+                if (newLight>255){
+                    newLight=255;
+                }else if (newLight<0){
+                    newLight=0;
+                }
+                //设置好亮度值之后，就可以去设置系统的亮度了
+                try {
+                    AjustSystemLightUtil.setSystemLight(this, (int) newLight);
+                } catch (Settings.SettingNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+            preY=lastY;  //这一步是在干嘛？
+        }
+        return super.onTouchEvent(event);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        //因为 这里仅仅 做视频的亮度调节 ，不能影响手机的亮度，所以在不看视频的时候 亮度应该回归到最初的位置
+        AjustSystemLightUtil.resetSystemLight(this,defaultScreenMode,defaultscreenBrightness);
     }
 }
