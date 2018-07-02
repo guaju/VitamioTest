@@ -30,15 +30,18 @@
             android:background="@drawable/pause"
             />
     </FrameLayout>
-        <RelativeLayout
-            android:id="@+id/rl"
+        <LinearLayout
+            android:id="@+id/ll"
             android:layout_alignBottom="@+id/fl"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
+            android:gravity="center"
             android:background="#a666"
-            android:visibility="gone"
+            android:orientation="horizontal"
+            android:visibility="visible"
             android:padding="5dp"
             >
+            <!--播放暂停的图片-->
             <ImageView
                 android:id="@+id/iv_play"
                 android:layout_width="20dp"
@@ -46,9 +49,20 @@
                 android:background="@drawable/pause"
                 android:onClick="playorpause"
                 />
+            <SeekBar
+                android:id="@+id/seekbar"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                style="@style/MediaController_SeekBar"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+
+
+
+            <!--放大缩小图片-->
                 <ImageView
                     android:id="@+id/iv_zoom_control"
-                    android:layout_alignParentRight="true"
                     android:layout_width="20dp"
                     android:layout_height="20dp"
                     android:onClick="max"
@@ -56,7 +70,7 @@
                     />
 
 
-        </RelativeLayout>
+        </LinearLayout>
 
 
 </RelativeLayout>
