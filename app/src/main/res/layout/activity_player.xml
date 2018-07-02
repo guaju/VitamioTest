@@ -53,7 +53,7 @@
                 android:id="@+id/seekbar"
                 android:layout_marginLeft="5dp"
                 android:layout_marginRight="5dp"
-                style="@style/MediaController_SeekBar"
+                style="@android:style/Widget.DeviceDefault.Light.SeekBar"
                 android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="match_parent" />

@@ -7,6 +7,7 @@ import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
@@ -28,16 +29,18 @@ import io.vov.vitamio.widget.MediaController;
 import io.vov.vitamio.widget.VideoView;
 
 public class PlayerActivity extends AppCompatActivity {
-
+    private static final int SEEKBAR_WHAT = 200; //seekbar 更新的what值
+    private static final int BOTTOM_GONE_WHAT = 201;
 
     private static final String TAG = "PlayerActivity";
     private static final int PLAY_STATUS_PLAY = 100; //如果是play状态的话 图标应该是 双竖线
     private static final int PLAY_STATUS_PAUSE = 101; //如果是暂停状态 图标应该是 三角
+
     private int status_play = PLAY_STATUS_PLAY;
     private VideoView mVideoView;
     private String path;
     private LinearLayout ll;
-    private Handler mHandler = new Handler();
+
     private LinearLayout titlebar;
     private ImageView iv_play,iv2_play;
     private SeekBar seekBar;
@@ -47,7 +50,22 @@ public class PlayerActivity extends AppCompatActivity {
     private MediaPlayer mediaPlayer;
     private MediaController mediaController;
 
-
+    private Handler mHandler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            if (msg.what==SEEKBAR_WHAT){
+                //在这给mHandler自己发消息，然后循环处理
+                long currentPosition = mVideoView.getCurrentPosition();//获取当前播放位置
+                float v = currentPosition / videoScale; //获取当前seekbar真实的位置
+                seekBar.setProgress((int)v);
+                Log.e("guaju",(int)v+"");
+                mHandler.sendEmptyMessageDelayed(SEEKBAR_WHAT,2000);
+            }else if (msg.what==BOTTOM_GONE_WHAT){
+                ll.setVisibility(View.GONE);
+                iv2_play.setVisibility(View.GONE);
+            }
+        }
+    };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,14 +92,6 @@ public class PlayerActivity extends AppCompatActivity {
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-               //当进度发生变化时的监听
-                Log.e("GUAJU",progress+"");
-
-                //通过seekbar拿到当前的进度
-                float v = progress * videoScale;//当前的播放进度
-                mVideoView.seekTo((long) v);   //把视频定位到这个位置
-
-
 
             }
 
@@ -93,9 +103,39 @@ public class PlayerActivity extends AppCompatActivity {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 //停止触摸时候的监听
+                int progress = seekBar.getProgress();
+
+                //当进度发生变化时的监听
+                Log.e("GUAJU",progress+"");
+
+                //通过seekbar拿到当前的进度
+                float v = progress * videoScale;//当前的播放进度
+                mVideoView.seekTo((long) v);   //把视频定位到这个位置
             }
         });
         //设置videoView自带的 拖拽进度监听
+
+
+        /*
+                需求 ：每隔2秒钟 设置seekbar的位置
+         */
+
+
+//        mVideoView.getCurrentPosition();//获取当前播放的位置
+//
+//        seekBar.setProgress(80);
+    }
+
+    private void updateSeekBarProgess() {
+//        if (mVideoView.isPlaying()){
+            //当视频播放时才做seekbar的更新
+
+            mHandler.sendEmptyMessage(SEEKBAR_WHAT);
+
+
+
+//        }
+
 
     }
 
@@ -112,37 +152,14 @@ public class PlayerActivity extends AppCompatActivity {
                         //当底部布局消失的时候显示底部布局
                         ll.setVisibility(View.VISIBLE);
                         iv2_play.setVisibility(View.VISIBLE);
-                        //清空所有消息
-                        mHandler.removeCallbacksAndMessages(null);
-//                        //有另外的清除特定消息的方法
-//                        Message obtain = Message.obtain();
-//                        obtain.what=888;
-//                        obtain.obj="nihaoma";
-//                        mHandler.sendMessage(obtain);
-//
-//                        Message obtain2 = Message.obtain();
-//                        obtain.what=777;
-//                        obtain.obj="nihaoma";
-//                        mHandler.sendMessage(obtain);
-//
-//                        mHandler.removeMessages(888);
-
-
-
+                        mHandler.removeMessages(BOTTOM_GONE_WHAT);
                         //然后3秒之后再让布局消失
-                        mHandler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                ll.setVisibility(View.GONE);
-                                iv2_play.setVisibility(View.GONE);
-                            }
-                        }, 3000);
+                        mHandler.sendEmptyMessageDelayed(BOTTOM_GONE_WHAT, 3000);
                     } else if (ll.getVisibility() == View.VISIBLE) {
                         //当底部布局显示的时候，让其消失
                         ll.setVisibility(View.GONE);
                         iv2_play.setVisibility(View.GONE);
                     }
-
 
                 }
 
@@ -198,6 +215,7 @@ public class PlayerActivity extends AppCompatActivity {
                 videoLength = mVideoView.getDuration();
                 //得到进度条和视频长度的比例
                 videoScale = videoLength/100;   //因为seekbar的总长度为100
+                updateSeekBarProgess();
             }
         });
 
@@ -255,6 +273,9 @@ public class PlayerActivity extends AppCompatActivity {
             //如果是播放状态，这个时候点击暂停 ，这个时候需要三角图标 提示用户现在是暂停状态
             //暂停的逻辑
             mVideoView.pause();
+            //停止seekbar的更新
+            mHandler.removeMessages(SEEKBAR_WHAT);
+
             iv_play.setBackgroundResource(R.drawable.play);
             iv2_play.setBackgroundResource(R.drawable.play);
             //改变状态
@@ -263,6 +284,7 @@ public class PlayerActivity extends AppCompatActivity {
         } else if (status_play == PLAY_STATUS_PAUSE) {
             //播放
             mVideoView.start();
+            updateSeekBarProgess();
             //换图片
             iv_play.setBackgroundResource(R.drawable.pause);
             iv2_play.setBackgroundResource(R.drawable.pause);
