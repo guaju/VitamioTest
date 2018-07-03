@@ -3,4 +3,5 @@
     <dimen name="videoview_height">200dp</dimen>
     <dimen name="half_videoview_height">100dp</dimen>
     <dimen name="full_light_height">100dp</dimen>
+    <dimen name="mindistance">5dp</dimen>
 </resources>

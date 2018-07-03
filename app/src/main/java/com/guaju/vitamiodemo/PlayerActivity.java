@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -15,6 +16,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -34,6 +36,10 @@ import io.vov.vitamio.widget.VideoView;
 public class PlayerActivity extends AppCompatActivity {
     private static final int SEEKBAR_WHAT = 200; //seekbar 更新的what值
     private static final int BOTTOM_GONE_WHAT = 201;
+    private static final int LIGHT_BAR_GONE_WHAT = 202;
+
+
+
 
     private static final String TAG = "PlayerActivity";
     private static final int PLAY_STATUS_PLAY = 100; //如果是play状态的话 图标应该是 双竖线
@@ -66,6 +72,8 @@ public class PlayerActivity extends AppCompatActivity {
             } else if (msg.what == BOTTOM_GONE_WHAT) {
                 ll.setVisibility(View.GONE);
                 iv2_play.setVisibility(View.GONE);
+            }else if (msg.what==LIGHT_BAR_GONE_WHAT){
+                fl_light_bar.setVisibility(View.GONE);
             }
         }
     };
@@ -77,6 +85,9 @@ public class PlayerActivity extends AppCompatActivity {
     private float newLight;
     private FrameLayout fl;
     private TextView lightBar;
+    private FrameLayout fl_light_bar;
+    private int videoViewStartY;
+    private int videoViewEndY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -288,6 +299,8 @@ public class PlayerActivity extends AppCompatActivity {
         //找到seekbar
         seekBar = (SeekBar) findViewById(R.id.seekbar);
         //亮度条
+        fl_light_bar = (FrameLayout) findViewById(R.id.fl_light_bar);
+        fl_light_bar.setVisibility(View.GONE);
         lightBar = (TextView) findViewById(R.id.tv_light);
 
     }
@@ -317,7 +330,9 @@ public class PlayerActivity extends AppCompatActivity {
             //同样把titlebar去掉
             titlebar.setVisibility(View.GONE);
             //切换成水平方向时，需要重新设置他的宽高
-
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            }
             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 
             mVideoView.setLayoutParams(lp);
@@ -359,16 +374,25 @@ public class PlayerActivity extends AppCompatActivity {
     //重写了activity点击事件的方法（不是生命周期）
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        int[] framelayoutLocation=new int[2];
-        fl.getLocationOnScreen(framelayoutLocation);
-        int videoViewX = framelayoutLocation[0];
-        int videoViewStartY = framelayoutLocation[1];
-        int videoViewEndY = videoViewStartY+getResources().getDimensionPixelSize(R.dimen.videoview_height);
 
-
-        float x = event.getX();
         //拿到屏幕的宽度
         int screenWidth = ScreenUtil.getScreenWidth(PlayerActivity.this);
+        //如果是竖屏的话
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            int[] framelayoutLocation = new int[2];
+            fl.getLocationOnScreen(framelayoutLocation);
+            videoViewStartY = framelayoutLocation[1];
+            videoViewEndY = videoViewStartY + getResources().getDimensionPixelSize(R.dimen.videoview_height);
+
+        }
+        //如果是横屏的话
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
+            videoViewStartY=0;
+            videoViewEndY=screenWidth;
+        }
+        float x = event.getX();
+
+
 
 
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -376,21 +400,33 @@ public class PlayerActivity extends AppCompatActivity {
         }
         if (event.getAction() == MotionEvent.ACTION_MOVE) {
             lastY = event.getY();
+            float v = lastY - preY;
+
+
+            if (x>screenWidth/2&&Math.abs(v)>getResources().getDimensionPixelSize(R.dimen.mindistance)){
+                //属于调节亮度
+                //先清空发送控制亮度条的消息
+                mHandler.removeMessages(LIGHT_BAR_GONE_WHAT);
+                //再显示
+                fl_light_bar.setVisibility(View.VISIBLE);
+            }
             if (x>screenWidth/2){
                 //说明是在屏幕的右边，属于亮度调节
                 //要增加（减少的亮度值）
                 float dY;
-                if (preY<videoViewStartY){
-                    preY=videoViewStartY;
-                }
-                if (lastY<videoViewStartY){
-                    lastY=videoViewStartY;
-                }
-                if (preY>videoViewEndY){
-                    preY=videoViewEndY;
-                }
-                if (lastY>videoViewEndY){
-                    lastY=videoViewEndY;
+                if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+                    if (preY < videoViewStartY) {
+                        preY = videoViewStartY;
+                    }
+                    if (lastY < videoViewStartY) {
+                        lastY = videoViewStartY;
+                    }
+                    if (preY > videoViewEndY) {
+                        preY = videoViewEndY;
+                    }
+                    if (lastY > videoViewEndY) {
+                        lastY = videoViewEndY;
+                    }
                 }
                 dY =(lastY-preY)*lightScale; //这个是要调整的亮度 是分正负
                 newLight =newLight-dY; //为什么是减去呢？因为dy如果是负数，说明我们是在增加亮度，减去一个负数就是
@@ -418,6 +454,14 @@ public class PlayerActivity extends AppCompatActivity {
             }
             preY=lastY;  //最终让之前按下的坐标等于滑动完后的坐标（为了一个良好的用户体验）否则会立即到达255或者0的值，用户体验不好
         }
+        if (event.getAction()==MotionEvent.ACTION_UP){
+            //抬起时，三秒后让fl_light_bar消失
+            mHandler.sendEmptyMessageDelayed(LIGHT_BAR_GONE_WHAT,3000);
+
+
+        }
+
+
         return super.onTouchEvent(event);
     }
 

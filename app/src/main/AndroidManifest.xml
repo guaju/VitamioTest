@@ -18,6 +18,7 @@
         <activity android:name=".LocalVideoActivity" />
         <activity
             android:name=".PlayerActivity"
+            android:screenOrientation="portrait"
             android:configChanges="orientation|keyboard|keyboardHidden|screenLayout|screenSize" />
         <activity android:name=".NetVideoActivity" />
         <activity android:name=".Main2Activity" />
