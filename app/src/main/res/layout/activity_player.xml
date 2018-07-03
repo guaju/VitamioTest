@@ -29,6 +29,22 @@
             android:layout_height="50dp"
             android:background="@drawable/pause"
             />
+        <FrameLayout
+            android:id="@+id/fl_light_bar"
+            android:layout_width="20dp"
+            android:layout_height="@dimen/full_light_height"
+            android:layout_gravity="center_vertical|right"
+            android:layout_marginRight="20dp"
+            android:background="#ff0000"
+            >
+        <TextView
+            android:layout_gravity="bottom"
+            android:id="@+id/tv_light"
+            android:layout_width="20dp"
+            android:layout_height="0dp"
+            android:background="#c0efc0"
+            />
+        </FrameLayout>
     </FrameLayout>
         <LinearLayout
             android:id="@+id/ll"
@@ -53,13 +69,13 @@
                 android:id="@+id/seekbar"
                 android:layout_marginLeft="5dp"
                 android:layout_marginRight="5dp"
-                style="@android:style/Widget.DeviceDefault.Light.SeekBar"
+                style="@style/MediaController_SeekBar"
                 android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="match_parent" />
 
 
-
+            <!--style="@android:style/Widget.DeviceDefault.Light.SeekBar"-->
             <!--放大缩小图片-->
                 <ImageView
                     android:id="@+id/iv_zoom_control"

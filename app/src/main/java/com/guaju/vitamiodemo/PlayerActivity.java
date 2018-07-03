@@ -19,6 +19,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
+import android.widget.TextView;
 
 import com.guaju.vitamiodemo.utils.AjustSystemLightUtil;
 import com.guaju.vitamiodemo.utils.ScreenUtil;
@@ -59,9 +60,9 @@ public class PlayerActivity extends AppCompatActivity {
                 //在这给mHandler自己发消息，然后循环处理
                 long currentPosition = mVideoView.getCurrentPosition();//获取当前播放位置
                 float v = currentPosition / videoScale; //获取当前seekbar真实的位置
-                seekBar.setProgress((int) v);
+                seekBar.setProgress((int) v);   //把位置设置给seekbar  seekbar就能定位到那个位置
                 Log.e("guaju", (int) v + "");
-                mHandler.sendEmptyMessageDelayed(SEEKBAR_WHAT, 2000);
+                mHandler.sendEmptyMessageDelayed(SEEKBAR_WHAT, 2000); //通过再次发送相同what值的消息，让循环转动起来，每隔两秒钟一次
             } else if (msg.what == BOTTOM_GONE_WHAT) {
                 ll.setVisibility(View.GONE);
                 iv2_play.setVisibility(View.GONE);
@@ -74,6 +75,8 @@ public class PlayerActivity extends AppCompatActivity {
     private int defaultscreenBrightness;
     private float lightScale;//亮度比例值
     private float newLight;
+    private FrameLayout fl;
+    private TextView lightBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,7 +86,7 @@ public class PlayerActivity extends AppCompatActivity {
         if (!LibsChecker.checkVitamioLibs(this))
             return;
         setContentView(R.layout.activity_player);
-        findid();
+        initView();
         //给各控件设置监听
         initEvent();
 
@@ -113,9 +116,27 @@ public class PlayerActivity extends AppCompatActivity {
         // 获得当前屏幕亮度值 0--255
         defaultscreenBrightness = AjustSystemLightUtil.getSystemLightValue(this);
         newLight = defaultscreenBrightness;//为了下文中设置亮度用的变量
-        //计算手指滑动改变亮度的比例值
+        //计算手指滑动改变亮度的比例值         200dp  在720*1080的手机上边  等于400px   1080*1920的手机上边 600px
         lightScale = 255.0f / getResources().getDimensionPixelSize(R.dimen.videoview_height);
+        //获取完系统亮度之后，给tv_light设置默认的高度
+        setLightBarHeight(defaultscreenBrightness);
 
+
+    }
+
+    private void setLightBarHeight(int value) {
+         //设置亮度条的默认亮度
+        //1、先拿到每px代表的亮度
+        float v = 255.0f / getResources().getDimensionPixelSize(R.dimen.full_light_height);
+        //2、当前亮度值为传入的value 参数
+        float defaultLightHeight = value / v;  //得到默认的像素高度
+        resetLightBarHeight((int) defaultLightHeight);
+    }
+    //重新设置lightbar的高度
+    private void resetLightBarHeight(int defaultLightHeight) {
+        ViewGroup.LayoutParams layoutParams = lightBar.getLayoutParams();
+        layoutParams.height= defaultLightHeight;
+        lightBar.setLayoutParams(layoutParams);
     }
 
     private void initEvent() {
@@ -123,17 +144,17 @@ public class PlayerActivity extends AppCompatActivity {
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
+                 //当seekbar进度发生变化的时候触发（不管是手指拖动 还是代码控制seekbar的进度，都会触发这个方法）
             }
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-                //当开始触摸拖拽时的监听
+                //当开始触摸拖拽时的监听，开始触摸的时候触发
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                //停止触摸时候的监听
+                //停止触摸时候的监听，触摸完离开的时候触发
                 int progress = seekBar.getProgress();
 
                 //当进度发生变化时的监听
@@ -255,16 +276,19 @@ public class PlayerActivity extends AppCompatActivity {
 
     }
 
-    private void findid() {
+    private void initView() {
         mVideoView = findViewById(R.id.videoview);
         //rl是点击videoview出来的那一条
         ll = (LinearLayout) findViewById(R.id.ll);
+        fl = (FrameLayout) findViewById(R.id.fl);
         //自定义的标题条
         titlebar = (LinearLayout) findViewById(R.id.titlebar);
         iv_play = (ImageView) findViewById(R.id.iv_play);
         iv2_play = (ImageView) findViewById(R.id.iv2_play);
         //找到seekbar
         seekBar = (SeekBar) findViewById(R.id.seekbar);
+        //亮度条
+        lightBar = (TextView) findViewById(R.id.tv_light);
 
     }
 
@@ -308,7 +332,7 @@ public class PlayerActivity extends AppCompatActivity {
             //暂停的逻辑
             mVideoView.pause();
             //停止seekbar的更新
-            mHandler.removeMessages(SEEKBAR_WHAT);
+            mHandler.removeMessages(SEEKBAR_WHAT);   //暂停的时候   清除掉所有what值为   SEEKBAR_WHAT  消息处理
 
             iv_play.setBackgroundResource(R.drawable.play);
             iv2_play.setBackgroundResource(R.drawable.play);
@@ -318,7 +342,7 @@ public class PlayerActivity extends AppCompatActivity {
         } else if (status_play == PLAY_STATUS_PAUSE) {
             //播放
             mVideoView.start();
-            updateSeekBarProgess();
+            updateSeekBarProgess(); //开始播放的时候，再次发送  what值为   SEEKBAR_WHAT 的消息，把2s一次的循环开启
             //换图片
             iv_play.setBackgroundResource(R.drawable.pause);
             iv2_play.setBackgroundResource(R.drawable.pause);
@@ -332,13 +356,19 @@ public class PlayerActivity extends AppCompatActivity {
     public enum PlayType {
         TYPE_LOCAL, TYPE_NET;
     }
-
+    //重写了activity点击事件的方法（不是生命周期）
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        int[] framelayoutLocation=new int[2];
+        fl.getLocationOnScreen(framelayoutLocation);
+        int videoViewX = framelayoutLocation[0];
+        int videoViewStartY = framelayoutLocation[1];
+        int videoViewEndY = videoViewStartY+getResources().getDimensionPixelSize(R.dimen.videoview_height);
+
+
         float x = event.getX();
         //拿到屏幕的宽度
         int screenWidth = ScreenUtil.getScreenWidth(PlayerActivity.this);
-
 
 
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -349,8 +379,24 @@ public class PlayerActivity extends AppCompatActivity {
             if (x>screenWidth/2){
                 //说明是在屏幕的右边，属于亮度调节
                 //要增加（减少的亮度值）
-               float dY=(lastY-preY)*lightScale; //这个是要调整的亮度 是分正负
-               newLight =newLight-dY; //为什么是减去呢？因为dy如果是负数，说明我们是在增加亮度，减去一个负数就是
+                float dY;
+                if (preY<videoViewStartY){
+                    preY=videoViewStartY;
+                }
+                if (lastY<videoViewStartY){
+                    lastY=videoViewStartY;
+                }
+                if (preY>videoViewEndY){
+                    preY=videoViewEndY;
+                }
+                if (lastY>videoViewEndY){
+                    lastY=videoViewEndY;
+                }
+                dY =(lastY-preY)*lightScale; //这个是要调整的亮度 是分正负
+                newLight =newLight-dY; //为什么是减去呢？因为dy如果是负数，说明我们是在增加亮度，减去一个负数就是
+
+
+
                 //加上这个数 所以说是减法
                 Log.e("guaju", "变化的亮度值"+dY+"新亮度为"+newLight);
                 //调节系统亮度的范围是0-255
@@ -360,13 +406,17 @@ public class PlayerActivity extends AppCompatActivity {
                     newLight=0;
                 }
                 //设置好亮度值之后，就可以去设置系统的亮度了
+
+                setLightBarHeight((int) newLight);
+                
                 try {
+                    //设置系统的亮度值
                     AjustSystemLightUtil.setSystemLight(this, (int) newLight);
                 } catch (Settings.SettingNotFoundException e) {
                     e.printStackTrace();
                 }
             }
-            preY=lastY;  //这一步是在干嘛？
+            preY=lastY;  //最终让之前按下的坐标等于滑动完后的坐标（为了一个良好的用户体验）否则会立即到达255或者0的值，用户体验不好
         }
         return super.onTouchEvent(event);
     }
