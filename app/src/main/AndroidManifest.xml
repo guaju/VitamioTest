@@ -15,18 +15,23 @@
         <activity android:name=".MainActivity">
 
         </activity>
-        <activity android:name=".LocalVideoActivity" />
+        <activity android:name=".LocalVideoActivity"
+            android:screenOrientation="portrait"
+            />
         <activity
             android:name=".PlayerActivity"
             android:screenOrientation="portrait"
             android:configChanges="orientation|keyboard|keyboardHidden|screenLayout|screenSize" />
-        <activity android:name=".NetVideoActivity" />
-        <activity android:name=".Main2Activity" />
-        <activity android:name=".GuideActivity" />
-        <activity android:name=".SplashActivity">
+        <activity android:name=".NetVideoActivity"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".Main2Activity"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".GuideActivity"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".SplashActivity"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

@@ -57,14 +57,34 @@
             android:visibility="visible"
             android:padding="5dp"
             >
+            <FrameLayout
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:onClick="playorpause"
+                >
             <!--播放暂停的图片-->
             <ImageView
+                android:layout_gravity="center"
                 android:id="@+id/iv_play"
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:background="@drawable/pause"
-                android:onClick="playorpause"
                 />
+            </FrameLayout>
+            <FrameLayout
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:onClick="soundSwitch"
+                >
+            <ImageView
+                android:id="@+id/iv_sound"
+                android:layout_gravity="center"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+
+                android:background="@drawable/sound"
+                />
+            </FrameLayout>
             <SeekBar
                 android:id="@+id/seekbar"
                 android:layout_marginLeft="5dp"
@@ -77,14 +97,20 @@
 
             <!--style="@android:style/Widget.DeviceDefault.Light.SeekBar"-->
             <!--放大缩小图片-->
+
+            <FrameLayout
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:onClick="max"
+                >
                 <ImageView
+                    android:layout_gravity="center"
                     android:id="@+id/iv_zoom_control"
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:onClick="max"
                     android:background="@drawable/zoom"
                     />
-
+            </FrameLayout>
 
         </LinearLayout>
 

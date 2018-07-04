@@ -1,9 +1,12 @@
 package com.guaju.vitamiodemo;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.database.ContentObserver;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -30,35 +33,26 @@ import java.io.IOException;
 
 import io.vov.vitamio.LibsChecker;
 import io.vov.vitamio.MediaPlayer;
-import io.vov.vitamio.widget.MediaController;
 import io.vov.vitamio.widget.VideoView;
 
 public class PlayerActivity extends AppCompatActivity {
+    private   int SYSTEM_SOUND_VALUE;
     private static final int SEEKBAR_WHAT = 200; //seekbar 更新的what值
     private static final int BOTTOM_GONE_WHAT = 201;
     private static final int LIGHT_BAR_GONE_WHAT = 202;
-
-
-
-
     private static final String TAG = "PlayerActivity";
     private static final int PLAY_STATUS_PLAY = 100; //如果是play状态的话 图标应该是 双竖线
     private static final int PLAY_STATUS_PAUSE = 101; //如果是暂停状态 图标应该是 三角
-
     private int status_play = PLAY_STATUS_PLAY;
     private VideoView mVideoView;
     private String path;
     private LinearLayout ll;
-
     private LinearLayout titlebar;
     private ImageView iv_play, iv2_play;
     private SeekBar seekBar;
     private long videoLength;//视频长度
     private float videoScale;//视频长度和seekbar进度的比例
-    MediaController.MediaPlayerControl playerControl;
-    private MediaPlayer mediaPlayer;
-    private MediaController mediaController;
-
+    private boolean isSoundsOff=false;
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -72,7 +66,7 @@ public class PlayerActivity extends AppCompatActivity {
             } else if (msg.what == BOTTOM_GONE_WHAT) {
                 ll.setVisibility(View.GONE);
                 iv2_play.setVisibility(View.GONE);
-            }else if (msg.what==LIGHT_BAR_GONE_WHAT){
+            } else if (msg.what == LIGHT_BAR_GONE_WHAT) {
                 fl_light_bar.setVisibility(View.GONE);
             }
         }
@@ -88,6 +82,10 @@ public class PlayerActivity extends AppCompatActivity {
     private FrameLayout fl_light_bar;
     private int videoViewStartY;
     private int videoViewEndY;
+    private int currentSystemSoundsValue;
+    private AudioManager mAudioManager;
+    private ImageView iv_sound;
+    private SettingsContentObserver mSettingsContentObserver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,6 +105,11 @@ public class PlayerActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        //注册音量监听
+        registerVolumeChangeReceiver();
+        //获取系统媒体音量
+        getSystemMediaSoundValue(0);
+
 
         //存储系统初始亮度
         try {
@@ -114,9 +117,45 @@ public class PlayerActivity extends AppCompatActivity {
         } catch (Settings.SettingNotFoundException e) {
             e.printStackTrace();
         }
-
-
     }
+
+    //获得系统音量值，传入值为0时，会更改系统音量值
+    private int  getSystemMediaSoundValue(int count) {
+        mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        // 系统的是：0到Max，Max不确定，根据手机而定
+        int max = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        //媒体系统音量值
+        currentSystemSoundsValue = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+        if (count==0){ //传入0时拿到的是系统的亮度，给系统亮度赋值
+        SYSTEM_SOUND_VALUE=currentSystemSoundsValue;
+        }
+        //否则拿到的是当前的亮度
+        return currentSystemSoundsValue;
+    }
+
+    private void setCurrentMediaSoundValue(int value) {
+        if (mAudioManager == null) {
+            mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        }
+        //设置音量当前值
+        mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, value, 0);
+    }
+
+    private void downMediaSound() {
+        if (mAudioManager == null) {
+            mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        }
+        mAudioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC,AudioManager.ADJUST_LOWER,0);
+    }
+    private void upMediaSound() {
+        if (mAudioManager == null) {
+            mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        }
+        mAudioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC,AudioManager.ADJUST_RAISE,0);
+    }
+
+
+
 
     private void getSystemLightValue() throws Settings.SettingNotFoundException {
                  /* 获得当前屏幕亮度的模式
@@ -131,13 +170,11 @@ public class PlayerActivity extends AppCompatActivity {
         lightScale = 255.0f / getResources().getDimensionPixelSize(R.dimen.videoview_height);
         //获取完系统亮度之后，给tv_light设置默认的高度
         setLightBarHeight(defaultscreenBrightness);
-
-
     }
 
     private void setLightBarHeight(int value) {
          //设置亮度条的默认亮度
-        //1、先拿到每px代表的亮度
+        //1、先拿到每px代表的亮度   （在java代码中，所有的尺寸一般都是 px  720p=宽720*高1280     1080p=1080*1920）
         float v = 255.0f / getResources().getDimensionPixelSize(R.dimen.full_light_height);
         //2、当前亮度值为传入的value 参数
         float defaultLightHeight = value / v;  //得到默认的像素高度
@@ -214,6 +251,7 @@ public class PlayerActivity extends AppCompatActivity {
                         //当底部布局消失的时候显示底部布局
                         ll.setVisibility(View.VISIBLE);
                         iv2_play.setVisibility(View.VISIBLE);
+//                        iv_sound.setVisibility(View.VISIBLE);
                         mHandler.removeMessages(BOTTOM_GONE_WHAT);
                         //然后3秒之后再让布局消失
                         mHandler.sendEmptyMessageDelayed(BOTTOM_GONE_WHAT, 3000);
@@ -221,6 +259,7 @@ public class PlayerActivity extends AppCompatActivity {
                         //当底部布局显示的时候，让其消失
                         ll.setVisibility(View.GONE);
                         iv2_play.setVisibility(View.GONE);
+//                        iv_sound.setVisibility(View.GONE);
                     }
 
                 }
@@ -302,6 +341,7 @@ public class PlayerActivity extends AppCompatActivity {
         fl_light_bar = (FrameLayout) findViewById(R.id.fl_light_bar);
         fl_light_bar.setVisibility(View.GONE);
         lightBar = (TextView) findViewById(R.id.tv_light);
+        iv_sound = (ImageView)findViewById(R.id.iv_sound);
 
     }
 
@@ -367,6 +407,28 @@ public class PlayerActivity extends AppCompatActivity {
 
     }
 
+
+
+    public void soundSwitch(View view) {
+        //切换音量是否静音
+        if (isSoundsOff){
+            //此时需打开音量，恢复到系统音量（如果做音量调节，则恢复到静音之前的音量）
+            setCurrentMediaSoundValue(currentSystemSoundsValue);
+            //改变图片
+            iv_sound.setBackgroundResource(R.drawable.sound);
+            isSoundsOff=false;
+
+        }else{
+            //此时需要静音
+            //1、先拿到之前的音量
+            getSystemMediaSoundValue(1);
+            //2、设置成0
+            setCurrentMediaSoundValue(0);//0表示静音
+            iv_sound.setBackgroundResource(R.drawable.nosound);
+            isSoundsOff=true;
+        }
+    }
+
     //播放类型 枚举 可以让参数唯一
     public enum PlayType {
         TYPE_LOCAL, TYPE_NET;
@@ -375,34 +437,34 @@ public class PlayerActivity extends AppCompatActivity {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
 
-        //拿到屏幕的宽度
+        //1、拿到屏幕的宽度，目的是为了区分 亮度调整还是音量调整
         int screenWidth = ScreenUtil.getScreenWidth(PlayerActivity.this);
-        //如果是竖屏的话
+        //2、如果是竖屏的话
         if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
             int[] framelayoutLocation = new int[2];
             fl.getLocationOnScreen(framelayoutLocation);
-            videoViewStartY = framelayoutLocation[1];
+            videoViewStartY = framelayoutLocation[1];//这个数组第一个元素就是x轴坐标，第二个元素就是Y轴坐标
             videoViewEndY = videoViewStartY + getResources().getDimensionPixelSize(R.dimen.videoview_height);
 
         }
-        //如果是横屏的话
+        //3、如果是横屏的话
         if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
             videoViewStartY=0;
             videoViewEndY=screenWidth;
         }
+
+        //4、判断当前手指按下x轴坐标，也是为了判断是否是在调整亮度
         float x = event.getX();
-
-
-
-
+        //5、判断手势操作
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             preY = event.getY();  //按下的时候拿到按下的手指坐标
         }
         if (event.getAction() == MotionEvent.ACTION_MOVE) {
-            lastY = event.getY();
-            float v = lastY - preY;
+            lastY = event.getY(); //拿到滑动时的坐标
+            float v = lastY - preY;  //算出来当前Y轴方向 滑动的值（这个值分正负，正值表示手指往下滑，说明是要降低亮度，反之就是增加亮度）
 
-
+            //x>screenWidth是为了判断是否是在屏幕的右侧滑动，是的话 证明是在调整连固定
+            // Math.abs(v)得到 y轴方向滑动距离的绝对值，为的是只让用户在手指滑动的时候才显示 亮度条（用户体验）
             if (x>screenWidth/2&&Math.abs(v)>getResources().getDimensionPixelSize(R.dimen.mindistance)){
                 //属于调节亮度
                 //先清空发送控制亮度条的消息
@@ -415,6 +477,7 @@ public class PlayerActivity extends AppCompatActivity {
                 //要增加（减少的亮度值）
                 float dY;
                 if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+                    //如果按下的位置和滑动的位置，出了videoview的范围值的话，就让他成为这个临界值
                     if (preY < videoViewStartY) {
                         preY = videoViewStartY;
                     }
@@ -428,7 +491,9 @@ public class PlayerActivity extends AppCompatActivity {
                         lastY = videoViewEndY;
                     }
                 }
-                dY =(lastY-preY)*lightScale; //这个是要调整的亮度 是分正负
+                //得到调整的亮度差值
+                dY=(lastY-preY)*lightScale; //这个是要调整的亮度 是分正负
+                //根据亮度差值，得到当前最新的亮度
                 newLight =newLight-dY; //为什么是减去呢？因为dy如果是负数，说明我们是在增加亮度，减去一个负数就是
 
 
@@ -454,10 +519,10 @@ public class PlayerActivity extends AppCompatActivity {
             }
             preY=lastY;  //最终让之前按下的坐标等于滑动完后的坐标（为了一个良好的用户体验）否则会立即到达255或者0的值，用户体验不好
         }
+        //当手指抬起的时候，需要3秒后消失这个条
         if (event.getAction()==MotionEvent.ACTION_UP){
             //抬起时，三秒后让fl_light_bar消失
             mHandler.sendEmptyMessageDelayed(LIGHT_BAR_GONE_WHAT,3000);
-
 
         }
 
@@ -471,4 +536,45 @@ public class PlayerActivity extends AppCompatActivity {
         //因为 这里仅仅 做视频的亮度调节 ，不能影响手机的亮度，所以在不看视频的时候 亮度应该回归到最初的位置
         AjustSystemLightUtil.resetSystemLight(this,defaultScreenMode,defaultscreenBrightness);
     }
+
+    private void registerVolumeChangeReceiver() {
+        mSettingsContentObserver = new SettingsContentObserver(this, new Handler());
+        getApplicationContext().getContentResolver().registerContentObserver(android.provider.Settings.System.CONTENT_URI, true, mSettingsContentObserver);
+    }
+
+    private void unregisterVolumeChangeReceiver(){
+        getContentResolver().unregisterContentObserver(mSettingsContentObserver);
+    }
+
+    public class SettingsContentObserver extends ContentObserver {
+        Context context;
+
+        public SettingsContentObserver(Context c, Handler handler) {
+            super(handler);
+            context = c;
+        }
+
+        @Override
+        public boolean deliverSelfNotifications() {
+            return super.deliverSelfNotifications();
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            super.onChange(selfChange);
+            AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            int currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+            if(currentVolume==0){
+              //是静音
+                iv_sound.setBackgroundResource(R.drawable.nosound);
+            }else{
+              //非静音
+                iv_sound.setBackgroundResource(R.drawable.sound);
+            }
+        }
+    }
+
+
+
+
 }
