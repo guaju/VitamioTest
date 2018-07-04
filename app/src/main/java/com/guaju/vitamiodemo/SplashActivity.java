@@ -86,7 +86,8 @@ public class SplashActivity extends AppCompatActivity {
        mHandler.postDelayed(new Runnable() {
            @Override
            public void run() {
-              startActivity(new Intent(SplashActivity.this,MainActivity.class));
+              startActivity(new Intent(SplashActivity.this,LocalVideoActivity.class));
+              finish();
            }
        },i*1000);
     }
@@ -113,4 +114,6 @@ public class SplashActivity extends AppCompatActivity {
         }
 
     }
+
+
 }

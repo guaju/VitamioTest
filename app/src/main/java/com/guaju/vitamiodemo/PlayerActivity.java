@@ -36,7 +36,6 @@ import io.vov.vitamio.MediaPlayer;
 import io.vov.vitamio.widget.VideoView;
 
 public class PlayerActivity extends AppCompatActivity {
-    private   int SYSTEM_SOUND_VALUE;
     private static final int SEEKBAR_WHAT = 200; //seekbar 更新的what值
     private static final int BOTTOM_GONE_WHAT = 201;
     private static final int LIGHT_BAR_GONE_WHAT = 202;
@@ -101,14 +100,23 @@ public class PlayerActivity extends AppCompatActivity {
 
         initVideoViewTouchLisener();
         try {
+            int currentSoundValue = VideoApplication.getApp().getCurrentSoundValue();
+            if (currentSoundValue==0){
+                //说明没有播放过
+                //获取系统媒体音量
+                getSystemMediaSoundValue(0);
+            }else{
+                //说明播放过，把当前的音量设置为上次设置的音量
+                setCurrentMediaSoundValue(currentSoundValue);
+            }
+
             startPlay();
         } catch (IOException e) {
             e.printStackTrace();
         }
         //注册音量监听
         registerVolumeChangeReceiver();
-        //获取系统媒体音量
-        getSystemMediaSoundValue(0);
+
 
 
         //存储系统初始亮度
@@ -127,7 +135,9 @@ public class PlayerActivity extends AppCompatActivity {
         //媒体系统音量值
         currentSystemSoundsValue = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
         if (count==0){ //传入0时拿到的是系统的亮度，给系统亮度赋值
-        SYSTEM_SOUND_VALUE=currentSystemSoundsValue;
+        VideoApplication.getApp().setSystemSoundValue(currentSystemSoundsValue);
+        }else{
+        VideoApplication.getApp().setCurrentSoundValue(currentSystemSoundsValue);
         }
         //否则拿到的是当前的亮度
         return currentSystemSoundsValue;
@@ -535,6 +545,7 @@ public class PlayerActivity extends AppCompatActivity {
         super.onStop();
         //因为 这里仅仅 做视频的亮度调节 ，不能影响手机的亮度，所以在不看视频的时候 亮度应该回归到最初的位置
         AjustSystemLightUtil.resetSystemLight(this,defaultScreenMode,defaultscreenBrightness);
+
     }
 
     private void registerVolumeChangeReceiver() {
@@ -564,6 +575,7 @@ public class PlayerActivity extends AppCompatActivity {
             super.onChange(selfChange);
             AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
             int currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+            VideoApplication.getApp().setCurrentSoundValue(currentVolume);
             if(currentVolume==0){
               //是静音
                 iv_sound.setBackgroundResource(R.drawable.nosound);
@@ -575,6 +587,10 @@ public class PlayerActivity extends AppCompatActivity {
     }
 
 
-
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        //恢复系统的媒体音量
+        setCurrentMediaSoundValue(VideoApplication.getApp().getSystemSoundValue());
+    }
 }
