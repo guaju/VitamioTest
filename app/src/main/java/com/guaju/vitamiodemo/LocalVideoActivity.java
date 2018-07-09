@@ -51,46 +51,35 @@ public class LocalVideoActivity extends AppCompatActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                 File videoDir = new File(Environment.getExternalStorageDirectory() + "");
-                 listFiles(videoDir);
-                 new Handler(getMainLooper()).post(new Runnable() {
-                     @Override
-                     public void run() {
-                         if (filelists!=null&&!filelists.isEmpty()){
-                             //展示filename
-                             filenames=new String[filenamelists.size()];
-                             filenamelists.toArray(filenames);
-                             //此时files就装满了name
-                             ArrayAdapter<String> localAdapter = new ArrayAdapter<String>(LocalVideoActivity.this, R.layout.text_center_layout, filenames);
-                              listView.setAdapter(localAdapter);
-                             
+                File videoDir = new File(Environment.getExternalStorageDirectory() + "");
+                listFiles(videoDir);  //遍历手机所有视频文件
+                new Handler(getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (filelists != null && !filelists.isEmpty()) {
+                            //展示filename ,把视频文件名称的集合转成了数组
+                            filenames = new String[filenamelists.size()];
+                            filenamelists.toArray(filenames);
+                            //此时files就装满了name
+                            ArrayAdapter<String> localAdapter = new ArrayAdapter<String>(LocalVideoActivity.this, R.layout.text_center_layout, filenames);
+                            listView.setAdapter(localAdapter);
 
-                         }
-                     }
-                 });
+
+                        }
+                    }
+                });
             }
         }).start();
-
-
-//        //如果这个文件夹存在，并且文件夹下边有文件
-//        if (videoDir.exists() && videoDir.listFiles().length > 0) {
-//            Toast.makeText(this, "存在文件", Toast.LENGTH_SHORT).show();
-//            files = videoDir.listFiles();
-//            String[] namelist = videoDir.list();
-//            ArrayAdapter<String> localAdapter = new ArrayAdapter<>(this, R.layout.text_center_layout, namelist);
-//            listView.setAdapter(localAdapter);
-//        }
-
-
     }
-
+    //java 里面写的递归操作
     private void listFiles(File videoDir) {
-        File[] files = videoDir.listFiles();
+        File[] files = videoDir.listFiles();  //开始是从sd卡根目录 开始
         for (File f : files) {
+            //这是做安全校验（因为android中有些文件是不能读取的，而一旦读取，可能返回值是一个null）
             if (f == null || !f.exists()) {
                 return;
             }
-
+            //当f是一个文件时
             if (f.isFile()) {
                 if (f.getName().endsWith(".mp4") ||
                         f.getName().endsWith(".avi") ||
@@ -102,10 +91,13 @@ public class LocalVideoActivity extends AppCompatActivity {
                         f.getName().endsWith(".3gp")) {
                     //说明是视频文件
                     filelists.add(f);
+                    //这个是文件名字的集合
                     filenamelists.add(f.getName());
                 }
             }
+            //当f是一个文件时
             if (f.isDirectory()) {
+                //重新开始执行一遍
                 listFiles(f);
             }
         }

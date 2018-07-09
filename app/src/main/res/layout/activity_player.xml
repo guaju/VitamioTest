@@ -45,6 +45,24 @@
             android:background="#c0efc0"
             />
         </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/fl_sound_bar"
+            android:layout_width="20dp"
+            android:layout_height="@dimen/full_light_height"
+            android:layout_gravity="center_vertical|left"
+            android:layout_marginLeft="20dp"
+            android:background="#ff0000"
+            >
+            <TextView
+                android:layout_gravity="bottom"
+                android:id="@+id/tv_sound"
+                android:layout_width="20dp"
+                android:layout_height="0dp"
+                android:background="#c0efc0"
+                />
+        </FrameLayout>
+
     </FrameLayout>
         <LinearLayout
             android:id="@+id/ll"
