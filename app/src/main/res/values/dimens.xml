@@ -8,4 +8,8 @@
     <dimen name="videoview_height_6">17dp</dimen>
     <dimen name="full_light_height">100dp</dimen>
     <dimen name="mindistance">5dp</dimen>
+    <dimen name="x_distance_flag_50">50dp</dimen>
+
+
+
 </resources>
